@@ -4,7 +4,7 @@ import pandas as pd
 from scipy import spatial
 import tiktoken
 # 设置你的 OpenAI API 密钥
-openai.api_key = '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'
+openai.api_key = ''
 # models
 EMBEDDING_MODEL = "text-embedding-ada-002"
 GPT_MODEL = "gpt-3.5-turbo"
@@ -40,18 +40,20 @@ def strings_ranked_by_relatedness(
     return strings[:top_n], relatednesses[:top_n]
 
 
-def doc2embedding(strs):
+def doc2embedding(strs, path):
     text = strs.replace("    ", "").split("\n")
     # 去掉list中的''元素
     text = list(filter(None, text))
+    # 将所有unicode 字符转换为utf-8字符
+    text = [ast.literal_eval("u" + repr(s).replace("u'", "'")) for s in text]
     # 对list 中的每个元素，创建embedding，并保存为dataframe，dataframe中的每行构成为：第一列为text，第二列为embedding
-
+    import pdb;pdb.set_trace()
     df = pd.DataFrame(
         [(s, openai.Embedding.create(input=[s], model=EMBEDDING_MODEL)["data"][0]["embedding"]) for s in text],
         columns=["text", "embedding"]
     )
     # 将df 保存为csv 文件
-    df.to_csv("../data/testspeech.csv", index=False)
+    df.to_csv(path, index=False)
     return df
 
 
@@ -60,7 +62,7 @@ def test_openai_api(df):
     while True:
         # 获取用户输入
         user_input = input("User: ")
-        question = query_message(user_input, df, GPT_MODEL, 500)
+        question = query_message(user_input, df, GPT_MODEL, 1000)
         # 设定退出条件
         if user_input == 'exit':
             print("Bye!")
@@ -119,15 +121,17 @@ def read_txt_file(path):
 
 
 if __name__ == '__main__':
+    path = "../data/doc_health.csv"
     # openai_multi_conversation
     # test_openai_api()
     # openai_embedding
     # test_openai_embedding("Hello, how are you today?")
     # DONE ALREADY: text to embedding, and save as csv file
-    # ret = read_txt_file('../data/testspeech.txt')
-    # embeds = doc2embedding(ret)
+    # ret = read_txt_file('../data/国务院办公厅关于印发.txt')
+    # embeds = doc2embedding(ret, path)
 
     #test qa
+
     df = pd.read_csv("../data/testspeech.csv")
     df['embedding'] = df['embedding'].apply(ast.literal_eval)
     print("done")
